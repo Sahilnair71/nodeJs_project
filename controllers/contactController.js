@@ -8,7 +8,7 @@ const Contact = require('../models/contactModel')
 //@access public
 
 const getContacts = asyncHandler(async (req, res) => {
-    const contactModel = await Contact.find()
+    const contactModel = await Contact.find({user_id:req.user.id})
     res.status(200).json({contactModel});
 });
 
@@ -21,6 +21,11 @@ const updateContact = asyncHandler(async (req, res) => {
     if (!contactModel){
         res.status(404)
         throw new Error()  
+    }
+    if (contactModel.user_id.toString() !== req.user.id){
+        res.status(403);
+        throw new Error("user dont have permission")
+
     }
     const update = await Contact.findByIdAndUpdate(req.params.id, req.body, {new: true})
     res.status(200).json(update);
@@ -38,7 +43,8 @@ const createContact =asyncHandler(async (req, res) => {
     }
 
     const contact = await Contact.create({
-        name,email
+        name,email,
+        user_id:req.user.id
     })
     res.status(201).json(contact);
 })
@@ -47,6 +53,13 @@ const createContact =asyncHandler(async (req, res) => {
 //@access public
 
 const deleteContact = asyncHandler(async (req, res) => {
+    const contactModel = await Contact.findById(req.params.id)
+    if (contactModel.user_id.toString() !== req.user.id){
+        res.status(403);
+        throw new Error("user dont have permission")
+
+    }
+    
     const contact = await Contact.findByIdAndDelete(req.params.id)
     if (!contact){
         res.status(404)
